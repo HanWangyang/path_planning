@@ -28,6 +28,8 @@ ncols = 10;
 start_node = sub2ind(size(map1), 10,1); %sub2ind是把矩阵式索引以线性索引的形式给出
 dest_node = sub2ind(size(map1),1,4); %终点
 map1(dest_node) = 7;
+TraverseNum = 0;
+forNum = 0;
 % % 距离数组初始化
 distanceFromStart = Inf(nrows,ncols);  
 distanceFromStart(start_node) = 0; 
@@ -54,11 +56,11 @@ open(writerObj);
   [min_dist, current] = min(distanceFromStart(:)); %返回当前距离数组(距离起点）的最小值和最小值的位置索引。
   distanceFromStart
   min_dist
-  tic;
-    for t = 0.001:1
-        while toc < t
-        end
-    end
+%   tic;
+%     for t = 0.001:1.5
+%         while toc < t
+%         end
+%     end
   %[min_dist1, current1] = min(distanceFromgoal(:)); %返回当前距离数组（距离目标点）的最小值和最小值的位置索引。
    if ((current == dest_node) || isinf(min_dist)) %搜索到目标点或者全部搜索完，结束循环。
          break; 
@@ -67,6 +69,10 @@ open(writerObj);
 %       break;
 % end      
  map1(current) = 3; %将当前颜色标为红色。
+ image(1.5, 1.5, map1);
+  grid on; %显示方格线
+  axis image;
+ drawnow;
  %map1(current1)=3;
 distanceFromStart(current) = Inf;  %当前区域在距离数组中设置为无穷，表示已搜索。
 %distanceFromgoal(current1) = Inf;  %当前区域在距离数组中设置为无穷，表示已搜索。
@@ -103,12 +109,15 @@ distanceFromStart(current) = Inf;  %当前区域在距离数组中设置为无穷，表示已搜索。
 %     neighbor2(locate2,:)=[]; %在下一次搜索区域里去掉超限点，删除某一行。
 %     neighborIndex2 = sub2ind(size(map1),neighbor2(:,1),neighbor2(:,2)); %返回下次搜索区域的索引号。
 
+forNum = forNum + 1;
  for i=1:length(neighborIndex) 
  if (map1(neighborIndex(i))~=2) && (map1(neighborIndex(i))~=3 && map1(neighborIndex(i))~= 5)  %注意终点不在这个判断范围内，这样终点上是有路径索引信息的
      map1(neighborIndex(i)) = 4; %如果下次搜索的点不是障碍，不是起点，没有搜索过就标为蓝色。
-     if((neighborIndex(i)+1==current)||(neighborIndex(i)-1==current))
-        if distanceFromStart(neighborIndex(i))> min_dist + 2  %distanceFromStart是一个无穷大矩阵，在未遍历到时，肯定是大于min_dist+2的，所以这一步是用来判断是否被索引过
-          distanceFromStart(neighborIndex(i)) = min_dist+2; %这行是整个代码的核心变量赋值，这个distanceFromStart就是进行路径索引规划时的“?中的谱”，具体赋的值就是对每一格(步)评估
+     if((neighborIndex(i)+1==current)||(neighborIndex(i)-1==current))% || ...%判断是否在current的上方临格或下方临格（沿列方向），这是原作的代码,min_dist=23
+       %       (neighborIndex(i)+nrows==current)||(neighborIndex(i)-nrows==current))%改进：如果增加在current的水平左右侧方的临格判断，那么最终的for循环会增加3次（为73次），不清楚为何如此设计，但是求得的min_dist=16会正确
+        if distanceFromStart(neighborIndex(i))> min_dist + 1  %distanceFromStart是一个无穷大矩阵，在未遍历到时，肯定是大于min_dist+2的，所以这一步是用来判断是否被索引过
+            TraverseNum = TraverseNum + 1;
+            distanceFromStart(neighborIndex(i)) = min_dist + 1; %这行是整个代码的核心变量赋值，这个distanceFromStart就是进行路径索引规划时的“心中的谱”，具体赋的值就是对每一格(步)评估
              parent(neighborIndex(i)) = current; %如果在距离数组里，在parent里current临近的某点上(neighborIndex(i))，
                                                 %记录current的线性索引值，所以parent是一个类似链表一样的存在
                                                 %如果是起始点，则不会记录current在parent内，故在后续的生成rout上，就可以判断~=0了
@@ -116,9 +125,12 @@ distanceFromStart(current) = Inf;  %当前区域在距离数组中设置为无穷，表示已搜索。
 
         end 
      else
-         if distanceFromStart(neighborIndex(i))> min_dist + 1  
-          distanceFromStart(neighborIndex(i)) = min_dist+1; %mind_dist+2区别于下面的mind_dist+1,表示的是对角线的几个点？
-             parent(neighborIndex(i)) = current; %如果在距离数组里。 
+         if distanceFromStart(neighborIndex(i))> min_dist + 2  
+          distanceFromStart(neighborIndex(i)) = min_dist + 2; %mind_dist+2区别于下面的mind_dist+1,表示的是对角线的几个点？
+          TraverseNum = TraverseNum + 1;  
+          parent(neighborIndex(i)) = current;%如果在距离数组里，在parent里current临近的点上(neighborIndex(i))，
+                                                %记录current的线性索引值，所以parent是一个类似链表一样的存在
+                                                %如果是起始点，则不会记录current在parent内，故在后续的生成rout上，就可以判断~=0了 
          end
      end
   end 
@@ -156,7 +168,14 @@ else
     %提取路线坐标
   route =dest_node ;%从终点反向查找至启动，并提取
   while (parent(route(1)) ~= 0) %parent里填写的是current的索引，如果踩过的话，一定不为0，通过这种方式判断是否已经搜索到这了
-         route = [parent(route(1)), route];     
+         route = [parent(route(1)), route]; 
+         for k = 2:length(route) - 1 
+               map1(route(k)) = 6; 
+               image(1.5, 1.5, map1);
+              grid on; 
+              axis image; 
+               frame = getframe;
+         end
    end 
 %  动态显示出路线 
         for k = 2:length(route) - 1 

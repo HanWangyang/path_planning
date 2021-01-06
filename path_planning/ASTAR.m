@@ -5,7 +5,7 @@ close all;
 %load maze.mat map
 %field=map;
  n = 10;   % field size n x n tiles  20*20的界面
-wallpercent = 0.3;  % this percent of field is walls   15%的界面作为阻碍物（墙）
+wallpercent = 0.15;  % this percent of field is walls   15%的界面作为阻碍物（墙）
 cmap = [1 1 1; ...%  1 - white - 空地
         0 0 0; ...% 2 - black - 障碍 
         1 0 0; ...% 3 - red - 已搜索过的地方
@@ -99,7 +99,7 @@ drawnow;
     %cost1 = Inf*ones(4,1); heuristic1 = Inf*ones(4,1); pos1 = ones(4,2);
 %       cost1 = Inf*ones(4,1); heuristic1 = Inf*ones(4,1); pos1 = ones(4,2);  
     % if we can look left, we move from the right  左侧
-    newx = currentpos(1) ; newy = currentpos(2)-1; 
+    newx = currentpos(1) ; newy = currentpos(2)-1; %why newy subtract 1?
     if newy > 0  %如果没有到边界
       pos(1,:) = [newx newy];   %获得新的坐标
       heuristic(1) = abs(goalpos(1)-newx) + abs(goalpos(2)-newy);    %heuristic(1)为启发函数计算的距离代价
